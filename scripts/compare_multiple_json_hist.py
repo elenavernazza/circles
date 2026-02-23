@@ -83,8 +83,8 @@ def plot_stacked_bars(
         return
 
     # Figure layout
-    fig = plt.figure(figsize=(max(10, n_files * 1.2), 7))
-    gs = fig.add_gridspec(2, 1, height_ratios=[2, 1.], hspace=0.15)
+    fig = plt.figure(figsize=(max(8, n_files * 3.3), 7))
+    gs = fig.add_gridspec(2, 1, height_ratios=[2., 1.], hspace=0.05)
 
     # ---- Top panel: stacked per file ----
     ax1 = fig.add_subplot(gs[0, 0])
@@ -92,8 +92,7 @@ def plot_stacked_bars(
     bottoms = [0.0] * n_files
 
     # stack order: small to large average contribution (prettier)
-    avg = np.mean(np.array(values_by_file), axis=0)  # per-cat average
-    stack_order = list(np.argsort(avg))  # ascending
+    stack_order = list(np.argsort(values_by_file[0]))  # ascending based on first file
 
     for j in stack_order:
         seg = [values_by_file[i][j] for i in range(n_files)]
@@ -102,7 +101,7 @@ def plot_stacked_bars(
         bottoms = [b + s for b, s in zip(bottoms, seg)]
 
     ax1.set_xticks(x)
-    ax1.set_xticklabels(file_labels, fontsize=fontsize, rotation=rotate_labels)
+    ax1.tick_params(axis="x", labelbottom=False)
     ax1.tick_params(axis="y", labelsize=fontsize)
     ax1.set_ylabel(metric_label, fontsize=fontsize+2)
     ax1.set_ylim(0, max(bottoms) * 1.15 if bottoms else 1.0)
@@ -118,7 +117,7 @@ def plot_stacked_bars(
     # If too many categories, legend can get huge; user can restrict with --top in future if needed.
     ax1.legend(loc="upper left", bbox_to_anchor=(1, 1.05), fontsize=fontsize-2, frameon=False)
     hep.cms.text(f"{left_text}", ax=ax1, fontsize=fontsize+4)
-    hep.cms.lumitext(f"{right_text}", ax=ax1, fontsize=fontsize+4)
+    hep.cms.lumitext(rf"${right_text}$", ax=ax1, fontsize=fontsize+4)
 
     # ---- Bottom panel: delta vs baseline per file, split by category ----
     ax2 = fig.add_subplot(gs[1, 0], sharex=ax1)
@@ -146,7 +145,13 @@ def plot_stacked_bars(
 
     ax2.axhline(0, linestyle="--", linewidth=1, color='black')
     ax2.tick_params(axis="y", labelsize=fontsize, rotation=rotate_labels)
-    ax2.set_ylabel(f"Δt vs {file_labels[baseline_idx]} [ms]", fontsize=fontsize+2)
+    if len(file_labels[baseline_idx]) > 10:
+        ax2.set_ylabel(f"Δt [ms]", fontsize=fontsize+2)
+    else:
+        ax2.set_ylabel(f"Δt vs {file_labels[baseline_idx]} [ms]", fontsize=fontsize+2)
+    mmax = max(pos_bottom) if len(pos_bottom) > 0 else 0
+    mmin = min(neg_bottom) if len(neg_bottom) > 0 else 0
+    ax2.set_ylim(mmin - 0.05 * (mmax - mmin), mmax + 0.05 * (mmax - mmin))
     ax2.set_xticks(x)
     ax2.set_xticklabels(file_labels, fontsize=fontsize, rotation=rotate_labels)
     ax2.grid(axis="y", linestyle=":", alpha=0.5)
